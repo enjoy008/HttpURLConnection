@@ -27,10 +27,25 @@ import android.util.Log;
 public class HttpUtils {
 	protected static final String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
 	protected static final String CHARSET = "UTF-8";
-	protected final int connectTimeout = 5 * 1000;
-	protected final int readTimeout = 20 * 1000;
+	protected static final int connectTimeout = 5 * 1000;
+	protected static final int readTimeout = 20 * 1000;
 
 	private static HttpUtils instance;
+
+	private TrustManager[] trustAllCerts = { new X509TrustManager() {
+
+		public X509Certificate[] getAcceptedIssuers() {
+			return null;
+		}
+
+		public void checkClientTrusted(X509Certificate[] certs, String authType) {
+
+		}
+
+		public void checkServerTrusted(X509Certificate[] certs, String authType) {
+
+		}
+	} };
 
 	public static HttpUtils getInstance() {
 		if (instance == null) {
@@ -48,7 +63,7 @@ public class HttpUtils {
 			HttpsURLConnection
 					.setDefaultHostnameVerifier(new NullHostNameVerifier());
 			SSLContext sc = SSLContext.getInstance("TLS");
-			sc.init(null, this.trustAllCerts, new SecureRandom());
+			sc.init(null, trustAllCerts, new SecureRandom());
 			HttpsURLConnection
 					.setDefaultSSLSocketFactory(sc.getSocketFactory());
 		} catch (KeyManagementException e) {
@@ -58,27 +73,12 @@ public class HttpUtils {
 		}
 	}
 
-	private TrustManager[] trustAllCerts = { new X509TrustManager() {
-
-		public X509Certificate[] getAcceptedIssuers() {
-			return null;
-		}
-
-		public void checkClientTrusted(X509Certificate[] certs, String authType) {
-
-		}
-
-		public void checkServerTrusted(X509Certificate[] certs, String authType) {
-
-		}
-	} };
-
-	protected HttpURLConnection createConnection(String url) throws IOException {
+	public HttpURLConnection createConnection(String url) throws IOException {
 		String encodedUrl = Uri.encode(url, ALLOWED_URI_CHARS);
 		HttpURLConnection conn = (HttpURLConnection) new URL(encodedUrl)
 				.openConnection();
-		conn.setConnectTimeout(this.connectTimeout);
-		conn.setReadTimeout(this.readTimeout);
+		conn.setConnectTimeout(connectTimeout);
+//		conn.setReadTimeout(readTimeout);
 		return conn;
 	}
 
@@ -87,8 +87,9 @@ public class HttpUtils {
 
 		try {
 			HttpURLConnection conn = createConnection(url);
+			conn.setRequestMethod("GET");
 			is = conn.getInputStream();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -135,9 +136,9 @@ public class HttpUtils {
 		BufferedReader br = null;
 		try {
 			HttpURLConnection conn = createConnection(url);
+			conn.setRequestMethod("POST");
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
-			conn.setRequestMethod("POST");
 			conn.setUseCaches(false);// POST方式不能缓存数据
 			// conn.setRequestProperty(field, newValue);//header
 

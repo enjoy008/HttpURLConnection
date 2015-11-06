@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.kindy.httpurlconnection.utils.DBBaseHelper;
 import com.kindy.httpurlconnection.utils.HttpUtils;
 
 public class MainActivity extends Activity {
@@ -24,6 +26,8 @@ public class MainActivity extends Activity {
 		
 		
 		img = (ImageView) findViewById(R.id.img);
+		
+		DBBaseHelper.init(this.getApplicationContext());
 	}
 	
 	public void click(View view) {
@@ -55,5 +59,9 @@ public class MainActivity extends Activity {
 				
 			}
 		}.start();
+	}
+	
+	public void download(View view) {
+		startActivity(new Intent(this, DownloadActivity.class));
 	}
 }
