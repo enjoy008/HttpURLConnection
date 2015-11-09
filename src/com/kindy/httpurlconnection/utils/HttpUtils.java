@@ -27,8 +27,10 @@ import android.util.Log;
 public class HttpUtils {
 	protected static final String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
 	protected static final String CHARSET = "UTF-8";
+	/** 建立连接的超时时间 */
 	protected static final int connectTimeout = 5 * 1000;
-	protected static final int readTimeout = 20 * 1000;
+	/** 建立到资源的连接后从 input 流读入时的超时时间 */
+	protected static final int readTimeout = 10 * 1000;
 
 	private static HttpUtils instance;
 
@@ -78,7 +80,7 @@ public class HttpUtils {
 		HttpURLConnection conn = (HttpURLConnection) new URL(encodedUrl)
 				.openConnection();
 		conn.setConnectTimeout(connectTimeout);
-//		conn.setReadTimeout(readTimeout);
+		conn.setReadTimeout(readTimeout);
 		return conn;
 	}
 
