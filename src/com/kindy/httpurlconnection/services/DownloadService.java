@@ -1,16 +1,21 @@
 package com.kindy.httpurlconnection.services;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import android.app.Service;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.os.IBinder;
 import android.widget.Toast;
 
 import com.kindy.httpurlconnection.models.FileInfo;
+import com.kindy.httpurlconnection.utils.DBDownloadHelper;
+import com.kindy.httpurlconnection.utils.Debug;
+import com.kindy.httpurlconnection.utils.SQLiteUtils;
 
 public class DownloadService extends Service {
 
@@ -60,6 +65,9 @@ public class DownloadService extends Service {
     }
     private boolean removeDownloadTask(int fileId) {
     	DownloadTask task = getDownloadTask(fileId);
+    	if(task != null) {
+    		task.cancel();
+    	}
     	return removeDownloadTask(task);
     }
 
@@ -73,34 +81,57 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
     	
     	if(intent != null) {
-    		//获得activity传来的参数
             if (ACTION_START.equals(intent.getAction())) {
             	FileInfo downloadFile = (FileInfo) intent.getSerializableExtra(FILE_INFO);
-            	DownloadTask task = getDownloadTask(downloadFile.id);
-            	if(task == null) {
-            		task = new DownloadTask(getApplicationContext(), downloadFile);
-            		task.download();
-            		
-            		addDownloadTask(task);
-            	}
-
+            	start(downloadFile);
             } else if (ACTION_STOP.equals(intent.getAction())) {
             	FileInfo downloadFile = (FileInfo) intent.getSerializableExtra(FILE_INFO);
-            	DownloadTask task = getDownloadTask(downloadFile.id);
-            	if(task != null) {
-            		task.cancel();
-            		removeDownloadTask(task);
-            	}
-            } else if (NOTICE_DOWNLOAD_FINISH.equals(intent.getAction())) {
-            	int fileId = intent.getIntExtra(NOTICE_FILE_ID, 0);
-            	removeDownloadTask(fileId);
-            	
-            	Toast.makeText(getApplication(), "下载完成", Toast.LENGTH_SHORT).show();
+            	stop(downloadFile);
+            } else if (ACTION_UPDATE.equals(intent.getAction())) {
+            	FileInfo downloadFile = (FileInfo) intent.getSerializableExtra(FILE_INFO);
+            	update(downloadFile);
             }
     	}
        
         return super.onStartCommand(intent, flags, startId);
     }
+	
+	private void start(FileInfo downloadFile) {
+		DownloadTask task = getDownloadTask(downloadFile.id);
+    	if(task == null) {
+    		task = new DownloadTask(getApplicationContext(), downloadFile);
+    		task.download();
+    		
+    		addDownloadTask(task);
+    	}
+	}
+	
+	private void stop(FileInfo downloadFile) {
+		removeDownloadTask(downloadFile.id);
+	}
+	
+	private void update(FileInfo downloadFile) {
+		stop(downloadFile);
+		
+		SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+    	if(downloadFile.progress == downloadFile.length) {
+    		File tempFile = new File(DOWNLOAD_PATH + downloadFile.getFileName(true));
+    		boolean succeed = tempFile.renameTo(new File(DOWNLOAD_PATH + downloadFile.getFileName()));
+    		Debug.o(this, " succeed : " + succeed);
+    		
+    		SQLiteUtils.getInstance().delete(db, DBDownloadHelper.TABLE_FILE, "id = ?", new String[]{downloadFile.id +""});
+    		Toast.makeText(getApplication(), "下载完成", Toast.LENGTH_SHORT).show();
+    	} else {
+    		SQLiteUtils.getInstance().update(db, DBDownloadHelper.TABLE_FILE, downloadFile.toContentValues(), "id = ?", new String[]{downloadFile.id +""});
+    	}
+    	db.close();
+    	
+    	// 结束后再通知一次
+    	Intent intent2 = new Intent(DownloadService.ACTION_UPDATE);
+    	intent2.putExtra(NOTICE_FILE_ID, downloadFile.id);
+    	intent2.putExtra(NOTICE_PROGRESS, downloadFile.progress * 100 / downloadFile.length);
+        sendBroadcast(intent2);
+	}
 
     @Override
     public IBinder onBind(Intent intent) {

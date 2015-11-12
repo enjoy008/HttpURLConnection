@@ -47,11 +47,11 @@ public class FileInfo implements Serializable {
 		return values;
 	}
 
-	public String getFilename() {
-		return getFilename(false);
+	public String getFileName() {
+		return getFileName(false);
 	}
 	
-	public String getFilename(boolean isTemp) {
+	public String getFileName(boolean isTemp) {
 		String name = "tmp";
 		
 		int start = url.lastIndexOf(File.separator);

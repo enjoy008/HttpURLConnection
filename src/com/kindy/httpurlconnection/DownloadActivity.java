@@ -54,7 +54,9 @@ public class DownloadActivity extends Activity {
 		public void onClick(View v) {
 			switch(v.getId()) {
 			case R.id.btnStart: {
-					FileInfo downloadFile = new FileInfo(1, "http://www.imooc.com/mobile/mukewang.apk", 0, 0);
+					String url = "http://www.imooc.com/mobile/mukewang.apk";
+					FileInfo downloadFile = new FileInfo(1, url, 0, 0);
+					
 	            	
 	            	SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
 	            	Cursor cursor = SQLiteUtils.getInstance().rawQuery(db, "select * from " + DBDownloadHelper.TABLE_FILE + " where id = ?", new String[]{"1"});
@@ -72,7 +74,7 @@ public class DownloadActivity extends Activity {
 	                intent.putExtra(DownloadService.FILE_INFO, downloadFile);
 	                startService(intent);
 	
-	            	mTextView.setText(downloadFile.getFilename());
+	            	mTextView.setText(downloadFile.getFileName());
 				}
 				break;
 			case R.id.btnStop: {

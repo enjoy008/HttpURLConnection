@@ -19,11 +19,25 @@ public class DBDownloadHelper extends DBBaseHelper {
 			
 			+ "id integer not null, "
 			+ "url text not null, "
-			+ "length text not null, "
 			+ "progress text not null, "
+			+ "length text not null, "
 			
 			+ "_extra1 text default(''), "
 			+ "_extra2 text default('')"
+			+ ")";
+	
+	/** 表名 */
+	public static final String TABLE_THREAD = "t_thread";
+	
+	/** 创建表 */
+	public static final String SQL_THREAD = "create table if not exists " + TABLE_THREAD + "("
+			+ "_id integer primary key autoincrement, "
+			
+			+ "id integer not null, "
+			+ "fileId integer not null, "
+			+ "position text not null, "
+			+ "end text not null"
+			
 			+ ")";
 	
 	
@@ -49,6 +63,7 @@ public class DBDownloadHelper extends DBBaseHelper {
 		super.onCreate(db);
 		
 		db.execSQL(SQL_FILE);
+		db.execSQL(SQL_THREAD);
 	}
 
 }
