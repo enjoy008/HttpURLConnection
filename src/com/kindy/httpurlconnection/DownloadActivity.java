@@ -1,12 +1,12 @@
 package com.kindy.httpurlconnection;
 
+import net.sqlcipher.Cursor;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import com.kindy.httpurlconnection.models.FileInfo;
 import com.kindy.httpurlconnection.services.DownloadService;
+import com.kindy.httpurlconnection.utils.DBBaseHelper;
 import com.kindy.httpurlconnection.utils.DBDownloadHelper;
 import com.kindy.httpurlconnection.utils.SQLiteUtils;
 
@@ -58,7 +59,7 @@ public class DownloadActivity extends Activity {
 					FileInfo downloadFile = new FileInfo(1, url, 0, 0);
 					
 	            	
-	            	SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+	            	SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
 	            	Cursor cursor = SQLiteUtils.getInstance().rawQuery(db, "select * from " + DBDownloadHelper.TABLE_FILE + " where id = ?", new String[]{"1"});
 	            	if(cursor != null) {
 	            		if(cursor.moveToFirst()) {
@@ -80,7 +81,7 @@ public class DownloadActivity extends Activity {
 			case R.id.btnStop: {
 					FileInfo downloadFile = null;
 	            	
-	            	SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+	            	SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
 	            	Cursor cursor = SQLiteUtils.getInstance().rawQuery(db, "select * from " + DBDownloadHelper.TABLE_FILE + " where id = ?", new String[]{"1"});
 	            	if(cursor != null) {
 	            		if(cursor.moveToFirst()) {

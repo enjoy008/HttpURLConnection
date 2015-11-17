@@ -1,13 +1,16 @@
 package com.kindy.httpurlconnection.utils;
 
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 
 public class DBBaseHelper extends SQLiteOpenHelper {
+	/** SQLCipher所依赖的key，在对数据库进行加解密的时候SQLCipher都将使用这里指定的key。 */
+	public static final String SECRET_KEY = "secret_key";
 	protected static Context mContext;
 	public static void init(Context context) {
 		mContext = context;
+		SQLiteDatabase.loadLibs(mContext);
 	}
 	
 	protected DBBaseHelper(String name, int version) {

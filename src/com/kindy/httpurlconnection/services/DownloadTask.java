@@ -6,15 +6,16 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 
+import net.sqlcipher.Cursor;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
 
 import com.kindy.httpurlconnection.models.FileInfo;
 import com.kindy.httpurlconnection.models.ThreadInfo;
+import com.kindy.httpurlconnection.utils.DBBaseHelper;
 import com.kindy.httpurlconnection.utils.DBDownloadHelper;
 import com.kindy.httpurlconnection.utils.Debug;
 import com.kindy.httpurlconnection.utils.HttpUtils;
@@ -32,7 +33,7 @@ public class DownloadTask extends Thread {
 	public FileInfo fileInfo;
 	private boolean isRunning;
 	
-	private static final int mThreadCount = 3;
+	private static final int mThreadCount = 2;
 	private int mCurrentThreadCount = 0;
 	
 	public DownloadTask(Context context, FileInfo fileInfo) {
@@ -103,7 +104,7 @@ public class DownloadTask extends Thread {
                 raf.setLength(length);
                 
                 fileInfo.length = length;
-        		SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+        		SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
             	SQLiteUtils.getInstance().insert(db, DBDownloadHelper.TABLE_FILE, fileInfo.toContentValues());
             	db.close();
             	
@@ -132,7 +133,7 @@ public class DownloadTask extends Thread {
 			if(OPEN_DOWNLOAD == msg.what) {
 				if(fileInfo.length > 0) {
 					ArrayList<ThreadInfo> threadInfoList = new ArrayList<ThreadInfo>();
-					SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+					SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
 	            	Cursor cursor = SQLiteUtils.getInstance().rawQuery(db, "select * from " + DBDownloadHelper.TABLE_THREAD + " where fileId = ?", new String[]{fileInfo.id +""});
 	            	if(cursor != null) {
 	            		while(cursor.moveToNext()) {
@@ -178,7 +179,7 @@ public class DownloadTask extends Thread {
 			} else if(UPDATE_SUBTASK == msg.what) {
 				ThreadInfo threadInfo = (ThreadInfo) msg.obj;
 
-				SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+				SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
 				if(threadInfo.position == threadInfo.end + 1) {
 					SQLiteUtils.getInstance().delete(db, DBDownloadHelper.TABLE_THREAD, "id = ? and fileId = ?", new String[]{threadInfo.id +"", threadInfo.fileId +""});
 				} else {
@@ -222,17 +223,18 @@ public class DownloadTask extends Thread {
 		            conn.setRequestMethod("GET");
 		            conn.setUseCaches(false);
 //		            conn.setRequestProperty("Accept-Encoding", "identity");//不采用gzip压缩
-		            conn.setRequestProperty("Range", "bytes = " + threadInfo.position + "-" + threadInfo.end); // 坑爹，首先得服务端支持才行啊
-		            Debug.o(this, " Range = " + conn.getRequestProperty("Range"));
+//		            conn.setRequestProperty("Range", "bytes = " + threadInfo.position + "-" + threadInfo.end); // 坑爹，首先得服务端支持才行啊
+//		            Debug.o(this, " Range = " + conn.getRequestProperty("Range"));
+		            Debug.o(this, " Range = " + threadInfo.position + "-" + threadInfo.end);
 		        	
 		          //获得文件长度
 		            int length = -1;
 		            int responseCode = conn.getResponseCode();
-		            if (responseCode == HttpURLConnection.HTTP_PARTIAL) {
+		            if (/*responseCode == HttpURLConnection.HTTP_PARTIAL || */responseCode == HttpURLConnection.HTTP_OK) {
 		                length = conn.getContentLength();
 		            }
 		            
-		            Debug.o(this, " " + Thread.currentThread().getName() + " responseCode : " + responseCode + " length = " + length);
+//		            Debug.o(this, " " + Thread.currentThread().getName() + " responseCode : " + responseCode + " length = " + length);
 		            
 		            if(length > 0) {
 		                
@@ -243,11 +245,23 @@ public class DownloadTask extends Thread {
 		            	InputStream is = conn.getInputStream();
 		                byte[] buffer = new byte[1024 * 4];
 		                int len = -1;
-		                while (isRunning && (len = is.read(buffer)) != -1) {
+		                boolean finish = false;
+		                long skip = threadInfo.position;
+		                long temp;
+		                while(isRunning && skip > 0) {
+		                	temp = is.skip(skip);
+		                	skip -= temp;
+		                }
+		                Debug.o(this, " skip : " + skip);
+		                while (isRunning && !finish && (len = is.read(buffer)) != -1) {
 		                    //写入文件
 		                    raf.write(buffer, 0, len);
-		                    threadInfo.position += len;
 		                    
+		                    if(threadInfo.position + len > threadInfo.end) {
+		                    	len = (int) (threadInfo.end + 1 - threadInfo.position);
+		                    	finish = true;
+		                    }
+		                    threadInfo.position += len;
 		                    Message msg = Message.obtain();
 		                    msg.what = UPDATE_PROGRESS;
 		                    msg.arg1 = len;

@@ -5,14 +5,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Service;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.os.IBinder;
 import android.widget.Toast;
 
 import com.kindy.httpurlconnection.models.FileInfo;
+import com.kindy.httpurlconnection.utils.DBBaseHelper;
 import com.kindy.httpurlconnection.utils.DBDownloadHelper;
 import com.kindy.httpurlconnection.utils.Debug;
 import com.kindy.httpurlconnection.utils.SQLiteUtils;
@@ -113,7 +114,7 @@ public class DownloadService extends Service {
 	private void update(FileInfo downloadFile) {
 		stop(downloadFile);
 		
-		SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase();
+		SQLiteDatabase db = DBDownloadHelper.getInstance().getWritableDatabase(DBBaseHelper.SECRET_KEY);
     	if(downloadFile.progress == downloadFile.length) {
     		File tempFile = new File(DOWNLOAD_PATH + downloadFile.getFileName(true));
     		boolean succeed = tempFile.renameTo(new File(DOWNLOAD_PATH + downloadFile.getFileName()));

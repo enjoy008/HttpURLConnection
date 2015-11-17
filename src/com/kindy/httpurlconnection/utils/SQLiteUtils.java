@@ -1,8 +1,8 @@
 package com.kindy.httpurlconnection.utils;
 
+import net.sqlcipher.Cursor;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
 public class SQLiteUtils {
 

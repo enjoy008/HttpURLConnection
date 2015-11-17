@@ -1,6 +1,7 @@
 package com.kindy.httpurlconnection.utils;
 
-import android.database.sqlite.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase;
+
 
 public class DBDownloadHelper extends DBBaseHelper {
 	
